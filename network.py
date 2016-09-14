@@ -1,4 +1,6 @@
+## Codigo principal
+
 from node import Node
 
-Node node('localhost')
-node.leave()
+node = Node('localhost')
+node.join('localhost')
