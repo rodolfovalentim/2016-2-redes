@@ -1,6 +1,9 @@
 ## Codigo principal
-import struct
-import binascii
+from node import *
+import socket
+import threading
+import time
+import random
 
 def process_join ():
 	print 'teste'
@@ -49,7 +52,7 @@ def make_pkt(method, id_node, id_ant, ip_ant, id_prox, ip_prox):
 def read_pkt(packed_pkt):
 	hex_data = binascii.hexlify(packed_pkt)
 	text_string = hex_data.decode('utf-8')
-	method = int(text_string[:2])
+	cod_mensage = int(text_string[:2])
 	print(method)
 
 	# # tem que pegar apenas os dois primeiros
@@ -63,6 +66,6 @@ def read_pkt(packed_pkt):
 	# 	s = struct.Struct('! B B I')
 	# return s.unpack(packed_pkt)
 
-hostname = socket.gethostbyname(socket.gethostname())
-node = Node(hostname)
+node = Node('192.168.1.100')
 node.join('192.168.1.142')
+node.lookup('192.168.1.142', random.getrandbits(32))

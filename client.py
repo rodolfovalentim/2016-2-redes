@@ -7,10 +7,10 @@ import random
 # Create a UDP socket
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-server_address = ('localhost', 12233)
+server_address = ('192.168.1.100', 12233)
 
 values = (1, random.getrandbits(32))
-s = struct.Struct('B I')
+s = struct.Struct('! B I')
 packed_data = s.pack(*values)
 
 try:
