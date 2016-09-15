@@ -7,7 +7,7 @@ import struct
 
 class Node:
 	'A node in the network'
-		
+	cod_request_join = 0
 	def __init__(self, ip):
 		# self.ip = socket.gethostbyname(socket.gethostname())
 		self.ip = ip
@@ -15,16 +15,12 @@ class Node:
 		self.port = 12333
 		self.ip_next = None
 		self.key_next = None
-		self.ip_prev = None
-		self.key_prev = None
 
 	def create(self):
 		logging.info('Creating network...')
 		self.key = random.getrandbits(32)
 		self.ip_next = self.ip
 		self.key_next = self.key
-		self.ip_prev = self.ip
-		self.key_prev = self.key
 		logging.debug('Network created. IP = (%s:%s) | Key = %s' % (self.ip, self.port, self.key))
 
 	def join(self, contact_ip):
@@ -33,10 +29,10 @@ class Node:
 		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 		server_address = ('localhost', 12233)
-		
 		# building package
 		probable_key = random.getrandbits(32)
-		data = (1, probable_key)
+		data = (cod_request_join, probable_key)
+
 		s = struct.Struct('! B I')
 		packed_data = s.pack(*data)
 
@@ -52,12 +48,28 @@ class Node:
 			# unpacking data 
 			s = struct.Struct('! B B I B B B B I B B B B')
 			unpacked_data = s.unpack(data)
+			# TODO launch error se não for no padrão
 			print 'Unpacked Values:', unpacked_data
 			
-			if(unpacked_data[1] == 1):
-				print 'DATA IGUAL A 1'
+			if (unpacked_data[1] == 1):
+				logging.info('Information about next node obtained. Updating previous node...')
+				self.update()
 			elif (unpacked_data[1] == 0):
-				print 'DATA IGUAL A 0'
+				logging.warning('Key already exist. Trying again...')
+				logging.info('Trying again with new key...')
+				sock.close()
+				node.join(contact_ip)
+			else :
+				logging.error('Unknown error. Verify connection!')
+
+			self.key_next = unpacked_data[2]
+
+			self.ip_next = str(unpacked_data[3]) + '.' + str(unpacked_data[4]) + '.' 
+					     + str(unpacked_data[5]) + '.' + str(unpacked_data[6])
+
+			ip_prev = str(unpacked_data[8]) + '.' + str(unpacked_data[9]) + '.' 
+					+ str(unpacked_data[10]) + '.' + str(unpacked_data[11])
+
 
 		finally:
 			logging.info('Closing socket...')
@@ -83,7 +95,7 @@ class Node:
 		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 		# Bind the socket to the port
-		server_address = (self.ip, self.port)
+		server_address = ('localhost', 12233)
 		logging.debug('Starting up on %s port %s ...' % server_address)
 		
 		# sock.bind((socket.gethostname(), 80))
@@ -108,4 +120,4 @@ class Node:
 # Configuration of log messages
 logging.basicConfig(level  = logging.DEBUG,
                     format = '[%(levelname)s] (%(threadName)-10s) %(message)s',
-                    )
+                    )	
