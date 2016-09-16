@@ -19,10 +19,11 @@ class Node:
 
 	shouldIBeAlive = False
 	expecting_lookup = False
+	pending_loopup = []
 
 	def __init__(self, my_ip):
 		self.ip = my_ip
-		self.key = None
+		self.key = random.getrandbits(32)
 		self.port = 12233
 		self.ip_next = None
 		self.key_next = None
@@ -43,7 +44,6 @@ class Node:
 
 	def create(self):
 		logging.info('Creating network...')
-		self.key = random.getrandbits(32)
 		self.ip_next = self.ip
 		self.key_next = self.key
 		self.ip_prev = self.ip
@@ -148,23 +148,23 @@ class Node:
 		 	logging.info('Socket closed...')
 
 		
-	def lookup(self, ip_origin, key_origin, key_sought):
+	def lookup(self, key_sought, ip_contact, port_contact):
 		logging.info('Launch look up...')
 		server_address = (self.ip, self.port)
-		contact_address = (self.ip_next, self.key_next)
+		contact_address = (ip_contact, port_contact)
 		
 		logging.info('Creating socket...')
 		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		sock.bind(server_address)
 
 		# building package
-		ip_fmt = ip_origin.split('.')
+		ip_fmt = self.ip.split('.')
 		
 		if(len(ip_fmt) != 4):
 			logging.error('Wrong IP pattern')
 			return
 
-		data = (self.cod_request_lookup, key_origin, int(ip_fmt[0]), int(ip_fmt[1]), 
+		data = (self.cod_request_lookup, self.key, int(ip_fmt[0]), int(ip_fmt[1]), 
 				int(ip_fmt[2]), int(ip_fmt[3]), key_sought)
 
 		s = struct.Struct('! B I B B B B I')
@@ -172,14 +172,16 @@ class Node:
 
 		try:
 			# Send data
-			logging.debug('Sending "%s"' % packed_data)
+			logging.debug('Sending "%s" to %s' % (packed_data, contact_address))
 			sent = sock.sendto(packed_data, contact_address)
-			self.expecting_lookup = True
 
 		finally:
 			logging.info('Closing socket...')
 			sock.close()
 			logging.info('Socket closed...')
+
+ 	def update(self):
+		logging.info('Executing update...')
 
 	def process_lookup_request(self, pkt):
 		s = struct.Struct('! B I B B B B I')
@@ -193,7 +195,7 @@ class Node:
 			data = (self.cod_answer_lookup, key_sought, self.key_next, int(ip_fmt[0]), int(ip_fmt[1]), int(ip_fmt[2]), int(ip_fmt[3]))
 			s = struct.Struct('! B I I B B B B')
 			dest_ip = str(unpacked_data[2]) + '.' + str(unpacked_data[3]) + '.' + str(unpacked_data[4]) + '.' + str(unpacked_data[5])
-		elif
+		else:
 			data = unpacked_data
 			dest_ip = self.ip_next
 			s = struct.Struct('! B I B B B B I')
@@ -222,18 +224,49 @@ class Node:
 		key_sucessor = unpacked_data[2]
 		ip_sucessor = str(unpacked_data[3]) + '.' + str(unpacked_data[4]) + '.' + str(unpacked_data[5]) + '.' + str(unpacked_data[6])
 
+		logging.debug('Receive from LookUp: Key = "%s" IP = "%s"' % (key_sucessor, ip_sucessor))
+
+		logging.info('Creating socket...')
+		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		sock.bind(server_address)
+
+		try:
+			# Send data
+			logging.debug('Sending "%s"' % packed_data)
+			sent = sock.sendto(packed_data, contact_address)
+			self.expecting_lookup = True
+
+		finally:
+			logging.info('Closing socket...')
+			sock.close()
+			logging.info('Socket closed...')
+
 		return(key_sucessor, ip_sucessor)
 
- 	def update(self):
-		logging.info('Executing update...')
+	def process_join_request(self, pkt):
+		s = struct.Struct('! B I')
+		unpacked_data = s.unpack(*pkt)
+		lookup(self.ip, self.key, unpacked_data[1])
 
-	def read_pkt(self, packed_pkt):
+	def process_leave_request(self):
+		print('passou')
+
+	def process_update_request(self):
+		print('passou')
+
+	def process_my_lookup(self):
+		print('passou')
+
+	def process_my_update(self):
+		print('passou')
+
+	def read_pkt(self, packed_pkt, address):
 		pattern = '!' + str(len(packed_pkt)) + 'B'
 		s = struct.Struct(pattern)
 		cod_message = s.unpack(packed_pkt)[0]
 		
 		if cod_message == self.cod_request_join:
-			self.process_join_request()
+			self.process_join_request(packed_pkt, address)
 		elif cod_message == self.cod_request_leave:
 			self.process_leave_request()
 		elif cod_message == self.cod_request_lookup :
@@ -269,28 +302,12 @@ class Node:
 			try:
 				data, address = sock.recvfrom(4096)
 				logging.debug('Received %s bytes from %s' % (len(data), address))
-				self.read_pkt(data)
+				self.read_pkt(data, address)
 			except:
 				pass	
 
 		sock.close()
 		logging.info('Closing listener')
-
-	def process_join_request(self):
-		print('passou')
-
-	def process_leave_request(self):
-		print('passou')
-
-	def process_update_request(self):
-		print('passou')
-
-	def process_my_lookup(self):
-		print('passou')
-
-	def process_my_update(self):
-		print('passou')
-
 
 # Configuration of log messages
 logging.basicConfig(level  = logging.DEBUG,
