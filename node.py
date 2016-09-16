@@ -7,21 +7,22 @@ import struct
 
 class Node:
 	'A node in the network'
-	cod_request_join = 0
-	cod_request_leave = 1
-	cod_request_lookup = 2
-	cod_request_update = 3
+	cod_join_request = 0
+	cod_leave_request = 1
+	cod_lookup_request = 2
+	cod_update_request = 3
 
-	cod_answer_join = 128
-	cod_answer_leave = 129
-	cod_answer_lookup = 130
-	cod_answer_update = 131
+	cod_join_answer = 128
+	cod_leave_answer = 129
+	cod_lookup_answer = 130
+	cod_update_answer = 131
 
-	shouldIBeAlive = False
+	recv_data = None
+
 	expected_pkt = [False, False, False, False, False, False, False, False]
 
-	def __init__(self, my_ip):
-		self.ip = my_ip
+	def __init__(self, ip):
+		self.ip = ip
 		self.key = random.getrandbits(32)
 		self.port = 12233
 		self.ip_next = None
@@ -49,69 +50,74 @@ class Node:
 	def join(self, contact_ip):
 		logging.info('Joining network...')
 
-		server_address = (self.ip, self.port)
-		contact_address = (contact_ip, self.port)
-
-		logging.info('Creating socket...')
-		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-		sock.bind(server_address)
+		contact_address = (contact_ip, self.port) #change self.port to default_port
 
 		# building package
-		probable_key = random.getrandbits(32)
-		data = (self.cod_request_join, probable_key)
+		data = (self.cod_join_request, self.key)
 
 		s = struct.Struct('! B I')
 		packed_data = s.pack(*data)
 
-		try:
-			# Send data
-			logging.debug('Sending "%s"' % packed_data)
-			sent = sock.sendto(packed_data, contact_address)
+		# Send join message and wait for answer
+		self.sender(contact_address, packed_data)
+		self.expected_pkts[4] == True
+		while not self.expected_pkts[4]:
+			pass
 
-			# Receive response
-			logging.info('Waiting answer of network about next...')
-			data, server = sock.recvfrom(4096)
+		return self.recv_data
 
-			# unpacking data
-			s = struct.Struct('! B B I B B B B I B B B B')
-			unpacked_data = s.unpack(data)
+	def process_join_request(self, pkt, address):
+		s = struct.Struct('! B I')
+		unpacked_data = s.unpack(pkt)
+		error_code = 1
 
-			# TODO launch error se nao for no padrao
-			logging.debug('Unpacked Values: %s', (unpacked_data))
+		condition = unpacked_data[1] == self.key or unpacked_data[1] == self.key_next or unpacked_data[1] == self.key_prev
 
-			if (unpacked_data[1] == 1):
-				logging.info('Information about next node obtained. Updating previous node...')
-				self.update()
-			elif (unpacked_data[1] == 0):
-				logging.warning('Key already exist. Trying again...')
-				logging.info('Trying again with new key...')
-				sock.close()
-				node.join(contact_ip)
-				return
-			else :
-				logging.error('Unknown error. Verify connection or package string pattern!')
+		if(condition):
+			error_code = 0
 
-			self.key = probable_key
-			self.key_next = unpacked_data[2]
-			self.ip_next = str(unpacked_data[3]) + '.' + str(unpacked_data[4]) + '.' + str(unpacked_data[5]) + '.' + str(unpacked_data[6])
-			self.key_prev = unpacked_data[7]
-			self.ip_prev = str(unpacked_data[8]) + '.' + str(unpacked_data[9]) + '.' + str(unpacked_data[10]) + '.' + str(unpacked_data[11])
+		ip_prev_fmt = self.ip_prev.split('.')
+		ip_next_fmt = self.ip.split('.')
+		data = (self.cod_join_answer, error_code,
+		self.key, int(ip_next_fmt[0]), int(ip_next_fmt[1]), int(ip_fmt[2]), int(ip_fmt[3]),
+		self.key_prev, int(ip_prev_fmt[0]), int(ip_prev_fmt[1]), int(ip_prev_fmt[2]), int(ip_prev_fmt[3]))
 
-		finally:
-			logging.info('Closing socket...')
-			sock.close()
-			logging.info('Socket closed...')
+		s = struct.Struct('! B B I B B B B I B B B B')
+		packed_data = s.pack(data)
+
+		if not condition:
+			self.ip_prev = address[0]
+			self.key_prev = unpacked_data[1]
+
+		self.sender(address, packed_data)
+
+	def process_join_answer(self, pkt, address):
+		# unpacking data
+		s = struct.Struct('! B B I B B B B I B B B B')
+		unpacked_data = s.unpack(pkt)
+
+		logging.debug('Unpacked Values: %s', (unpacked_data))
+
+		if (unpacked_data[1] == 1):
+			logging.info('Information about next node obtained. Should update previous node...')
+			logging.info('Information about next node obtained. Should update next node...')
+		elif (unpacked_data[1] == 0):
+			logging.error('Key already exist. Try again...')
+			return False
+		else:
+			logging.error('Unknown error. Verify connection or package string pattern!')
+
+		self.key_next = unpacked_data[2]
+		self.ip_next = str(unpacked_data[3]) + '.' + str(unpacked_data[4]) + '.' + str(unpacked_data[5]) + '.' + str(unpacked_data[6])
+		self.key_prev = unpacked_data[7]
+		self.ip_prev = str(unpacked_data[8]) + '.' + str(unpacked_data[9]) + '.' + str(unpacked_data[10]) + '.' + str(unpacked_data[11])
+
+		return True
 
 	def leave(self):
 		logging.info('Leaving network...')
 
-		server_address = (self.ip, self.port)
-		prev_address = (self.ip_prev, self.port)
-		next_address = (self.ip_next, self.port)
-
-		logging.info('Creating socket...')
-		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-		sock.bind(server_address)
+		contact_address = ((self.ip_prev, self.port), (self.ip_next, self.port))
 
 		# building package
 		ip_prev_form = self.ip_prev.split('.')
@@ -121,7 +127,7 @@ class Node:
 			Logging.error('Wrong IP pattern')
 			return
 
-		values = (self.cod_request_leave, self.key, self.key_next,
+		values = (self.cod_leave_request, self.key, self.key_next,
 				int(ip_next_form[0]), int(ip_next_form[1]),
 				int(ip_next_form[2]), int(ip_next_form[3]),
 				self.key_prev,
@@ -131,27 +137,99 @@ class Node:
 		s = struct.Struct('! B I I B B B B I B B B B')
 		packed_data = s.pack(*values)
 
-		#TODO - TRATAMENTO DE RESPOSTA DO LEAVE
+		for i in range(2)
+			self.sender(contact_address[i], packed_data)
+			self.expected_pkts[5] = True
 
-		try:
-			# Send data
-			logging.debug('Sending "%s"' % packed_data)
-		 	sent = sock.sendto(packed_data, prev_address)
-		 	sent = sock.sendto(packed_data, next_address)
-		finally:
-			logging.info('Closing socket...')
-		 	sock.close()
-		 	logging.info('Socket closed...')
+			while not self.expected_pkts[5]:
+				pass
 
+			logging.debug('Receive %s', self.recv_data)
 
-	def lookup(self, key_sought, ip_contact, port_contact):
-		logging.info('Launch look up...')
-		server_address = (self.ip, self.port)
-		contact_address = (ip_contact, port_contact)
+		return
 
-		logging.info('Creating socket...')
-		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-		sock.bind(server_address)
+	def process_leave_request(self, pkt, address):
+		pass
+
+	def process_leave_answer(self, pkt, address):
+		pass
+
+	def update(self):
+	    logging.info('Executing update...')
+
+	    contact_address = (self.ip_prev, self.listen_port)
+
+	    # building package
+	    ip_fmt = self.ip.split('.')
+
+	    if (len(ip_fmt) != 4):
+	        logging.error('Wrong IP pattern')
+	        return
+
+	    data = (self.cod_request_update, self.key, self.key, int(ip_fmt[0]),
+	            int(ip_fmt[1]), int(ip_fmt[2]), int(ip_fmt[3]))
+
+	    s = struct.Struct('! B I I B B B B')
+	    packed_data = s.pack(*data)
+
+		self.sender(contact_address, packed_data)
+		self.expected_pkts[7] = True
+
+		while not self.expected_pkts[7]:
+			pass
+
+		return self.recv_data
+
+	def process_update_request(self, pkt, address):
+	    logging.info('Update received...')
+
+		#build package
+	    s = struct.Struct('! B I I B B B B')
+	    unpacked_data = s.unpack(pkt)
+	    received_key = unpacked_data[2]
+	    received_ip = str(unpacked_data[3]) + '.' + str(unpacked_data[4]) + '.' + str(unpacked_data[5]) + '.' + str(
+	        unpacked_data[6])
+
+	    contact_address = (received_ip, self.port)
+
+	    # building package
+	    ip_fmt = self.ip.split('.')
+
+	    if (len(ip_fmt) != 4):
+	        logging.error('Wrong IP pattern')
+	        return
+	    error_code = None
+		# Error verification
+	    if received_key == self.key or received_key == self.key_next or received_key == self.key_prev:
+	        error_code = 0
+	    else:
+	        self.ip_next = received_ip
+	        self.key_next = received_key
+	        error_code = 1
+	    data = (self.cod_answer_update, error_code, self.key)
+
+	    s = struct.Struct('! B B I')
+	    packed_data = s.pack(*data)
+
+		# Send package
+		self.sender(contact_address, packed_data)
+
+		return None
+
+	def process_update_answer(self, pkt, address):
+	    logging.info('Update response recieved...')
+	    s = struct.Struct('! B B I')
+	    unpacked_data = s.unpack(pkt)
+
+	    if unpacked_data[1] == 0:
+	        logging.error('Update error from %s' % unpacked_data[2])
+	    else:
+	        logging.debug('%s successfully apdated' % unpacked_data[2])
+
+	    return unpacked_data[1], unpacked_data[2]
+
+	def lookup(self, key_sought, contact_address):
+		logging.info('Looking up...')
 
 		# building package
 		ip_fmt = self.ip.split('.')
@@ -160,36 +238,31 @@ class Node:
 			logging.error('Wrong IP pattern')
 			return
 
-		data = (self.cod_request_lookup, self.key, int(ip_fmt[0]), int(ip_fmt[1]),
+		data = (self.cod_lookup_request, self.key, int(ip_fmt[0]), int(ip_fmt[1]),
 				int(ip_fmt[2]), int(ip_fmt[3]), key_sought)
 
 		s = struct.Struct('! B I B B B B I')
 		packed_data = s.pack(*data)
 
-		try:
-			# Send data
-			logging.debug('Sending "%s" to %s' % (packed_data, contact_address))
-			sent = sock.sendto(packed_data, contact_address)
+		# Send lookup message and wait for answer
+		self.sender(contact_address, packed_data)
+		self.expected_pkts[6] = True
 
-		finally:
-			logging.info('Closing socket...')
-			sock.close()
-			logging.info('Socket closed...')
+		while not self.expected_pkts[6]
+			pass
 
- 	def update(self):
-		logging.info('Executing update...')
+		return self.recv_data
 
-	def process_lookup_request(self, pkt):
-		packed_data = pkt
+	def process_lookup_request(self, packed_data, address):
 		s = struct.Struct('! B I B B B B I')
-		unpacked_data = s.unpack(*packed_data)
+		unpacked_data = s.unpack(packed_data)
 		key_sought = unpacked_data[6]
 
 		data = None
 		dest_ip = None
 		if ((key_sought >= self.key and (key_sought < self.key_next or self.key_next < self.key)) or (self.key_next < self.key and key_sought<self.key_next)):
 			ip_fmt = self.ip_next.split('.')
-			data = (self.cod_answer_lookup, key_sought, self.key_next, int(ip_fmt[0]), int(ip_fmt[1]), int(ip_fmt[2]), int(ip_fmt[3]))
+			data = (self.cod_lookup_answer, key_sought, self.key_next, int(ip_fmt[0]), int(ip_fmt[1]), int(ip_fmt[2]), int(ip_fmt[3]))
 			s = struct.Struct('! B I I B B B B')
 			dest_ip = str(unpacked_data[2]) + '.' + str(unpacked_data[3]) + '.' + str(unpacked_data[4]) + '.' + str(unpacked_data[5])
 		else:
@@ -198,25 +271,13 @@ class Node:
 			s = struct.Struct('! B I B B B B I')
 
 		packed_data = s.pack(*data)
+		contact_address = (dest_ip, self.port)
+		self.sender(contact_address, packed_data)
 
-		server_address = (self.ip, self.port)
-		logging.info('Creating socket...')
-		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-		sock.bind(server_address)
+		return
 
-		try:
-			# Send data
-			contact_address = (dest_ip, self.port)
-			logging.debug('Sending "%s" to %s' % (data, contact_address))
-			sent = sock.sendto(packed_data, dest_add)
-			self.expecting_lookup = True
-
-		finally:
-			logging.info('Closing socket...')
-			sock.close()
-			logging.info('Socket closed...')
-
-	def process_my_lookup(self, pkt):
+	def process_lookup_answer(self, pkt, address):
+		logging.info('Processing look up answer...')
 		s = struct.Struct('! B I I B B B B')
 		unpacked_data = s.unpack(pkt)
 
@@ -228,21 +289,24 @@ class Node:
 
 		return (key_sought, key_sucessor, ip_sucessor)
 
-	def process_join_request(self, pkt):
-		s = struct.Struct('! B I')
-		unpacked_data = s.unpack(*pkt)
-		lookup(self.ip, self.key, unpacked_data[1])
+	def sender(self, contact_address, packed_data):
+		server_address = (self.ip, self.port)
 
-	def process_leave_request(self):
-		print('passou')
+		logging.info('Creating socket...')
+		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		sock.bind(server_address)
 
-	def process_update_request(self):
-		print('passou')
+		try:
+			# Send data
+			logging.debug('Sending "%s" to %s' % (packed_data, contact_address))
+			sent = sock.sendto(packed_data, contact_address)
+		finally:
+			# Closing socket
+			logging.info('Closing socket...')
+			sock.close()
+			logging.info('Socket closed...')
 
-	def process_my_update(self):
-		print('passou')
-
-	def listen(self, pkt_type):
+	def listener(self):
 		logging.info('Creating server...')
 		server_address = (self.ip, self.port)
 
@@ -253,49 +317,51 @@ class Node:
 
 		data = None
 		address = None
-		answered = False
+		answered = True
+
 		logging.info('Waiting to receive message...')
 
-		while not answered :
+		while not answered:
 			try:
 				data, address = sock.recvfrom(4096)
 				logging.debug('Received %s bytes from %s' % (len(data), address))
-				pattern = '!' + str(len(packed_pkt)) + 'B'
+				pattern = '!' + str(len(data)) + 'B'
 				s = struct.Struct(pattern)
-				cod_message = s.unpack(packed_pkt)[0]
+				cod_message = s.unpack(data)[0]
+				logging.info(pkt_type[6])
 
-				if (cod_message == pkt_type):
-					self.process_join_request(packed_pkt, address)
-					answered = True
-				elif (cod_message == pkt_type):
-					self.process_leave_request()
-					answered = True
-				elif (cod_message == pkt_type):
-					self.process_lookup_request(packed_pkt)
-					answered = True
-				elif (cod_message == pkt_type):
-					self.process_update_request()
-					answered = True
-				elif (cod_message == pkt_type):
-					logging.warning('Join answer not expected. Ignoring...')
-					answered = True
-				elif (cod_message == pkt_type):
-					logging.warning('Leave answer not expected. Ignoring...')
-					answered = True
-				elif (cod_message == pkt_type):
-					logging.info('Answer lookup')
-					self.process_my_lookup(packed_pkt)
-					answered = True
-				elif (cod_message == pkt_type):
-					self.process_my_update()
-					answered = True
+				if (self.expected_pkts[0] and cod_message == self.cod_join_request):
+					self.process_join_request(data, address)
+				elif (self.expected_pkts[1] and cod_message == self.cod_leave_request):
+					self.process_leave_request(data, address)
+				elif (self.expected_pkts[2] and cod_message == self.cod_lookup_request):
+					self.process_lookup_request(data, address)
+				elif (self.expected_pkts[3] and cod_message == self.cod_update_request):
+					self.process_update_request(data, address)
+				elif (self.expected_pkts[4] and cod_message == self.cod_join_answer):
+					self.recv_data = self.process_join_answer(data, address)
+					self.expected_pkts[4] = False
+				elif (self.expected_pkts[5] and cod_message == self.cod_leave_answer):
+					self.recv_data = self.process_leave_answer(data, address)
+					self.expected_pkts[5] = False
+				elif (self.expected_pkts[6] and cod_message == self.cod_lookup_answer):
+					self.recv_data = self.process_lookup_answer(data, address)
+					self.expected_pkts[6] = False
+				elif (self.expected_pkts[7] and cod_message == self.cod_update_answer):
+					self.recv_data = self.process_update_answer(data, address)
+					self.expected_pkts[7] = False
 				else:
 					logging.error('Unknown code message')
 			except:
 				pass
 
+			answered = False
+			for i in range(8):
+				answered = answered or self.expected_pkts[i]
+
 		sock.close()
 		logging.info('Closing listener')
+		return
 
 # Configuration of log messages
 logging.basicConfig(level  = logging.DEBUG,
