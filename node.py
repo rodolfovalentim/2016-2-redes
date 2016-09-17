@@ -33,7 +33,7 @@ class Node:
 	def __str__(self):
 		return str(self.ip) + ', ' + str(self.key) + ', ' + str(self.port) + ', ' + str(self.ip_next) + ', ' + str(self.key_next)
 
-	def get_new_key()
+	def get_new_key(self):
 		self.key = random.getrandbits(32)
 
 	def create(self):
@@ -210,17 +210,19 @@ class Node:
 		return None
 
 	def process_update_answer(self, pkt, address):
-	    logging.info('Update response recieved...')
-	    s = struct.Struct('! B B I')
-	    unpacked_data = s.unpack(pkt)
+		logging.info('Update response recieved...')
+		s = struct.Struct('! B B I')
+		unpacked_data = s.unpack(pkt)
+		answer = None
 
-	    if unpacked_data[1] == 0:
-	        logging.error('Update error from %s' % unpacked_data[2])
-			return False
-	    else:
-	        logging.debug('%s successfully updated' % unpacked_data[2])
-			return True
-
+		if unpacked_data[1] == 0:
+			logging.error('Update error from %s' % unpacked_data[2])
+			answer = False
+		else:
+			logging.debug('%s successfully updated' % unpacked_data[2])
+			answer = True
+		return answer
+		
 	def lookup(self, key_sought, contact_address):
 		logging.info('Looking up...')
 
