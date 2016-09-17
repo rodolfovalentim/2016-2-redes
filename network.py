@@ -38,7 +38,7 @@ def leave():
 def lookup():
     key_input = raw_input('Type the key to look up: ')
     ip_sucessor = node.lookup(int(key_input), (node.ip_next, node.port))
-    logging.info('Answer lookup %s' % ip_sucessor)
+    logging.info('Answer lookup %s' % ip_sucessor[2])
 
 def update():
     node.update()
