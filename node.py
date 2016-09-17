@@ -290,9 +290,11 @@ class Node:
 	def sender(self, contact_address, packed_data):
 		server_address = (self.ip, self.port)
 
+		# The UDP echo client is similar the server, but does not use bind()
+		# to attach its socket to an address. It uses sendto() to deliver its
+		# message directly to the server, and recvfrom() to receive the response.
 		logging.info('Creating socket...')
 		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-		sock.bind(server_address)
 
 		try:
 			# Send data
