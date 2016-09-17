@@ -1,4 +1,5 @@
 from node import *
+import threading
 
 default_port = 12233
 
@@ -7,9 +8,7 @@ def join():
 
     while(True):
         ip_sucessor = node.lookup(node.key, (contact_ip, default_port))
-
-        while(ip_sucessor == None):
-            pass
+        logging.info(ip_sucessor)
 
         if(not node.join(ip_sucessor[2])):
             node.get_new_key()
@@ -21,4 +20,10 @@ def join():
 
 ip = raw_input('Your IP: ')
 node = Node(ip)
+node.set_mask(7)
+node.set_mask(6)
+node.set_mask(5)
+node.set_mask(4)
+t = threading.Thread(name='Listener', target=node.listener)
+t.start()
 join()

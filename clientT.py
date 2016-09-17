@@ -21,4 +21,5 @@ def join():
 
 ip = raw_input('Your IP: ')
 node = Node(ip)
+node.listener()
 join()

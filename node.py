@@ -36,6 +36,9 @@ class Node:
 	def get_new_key(self):
 		self.key = random.getrandbits(32)
 
+	def set_mask(self, arg):
+		self.expected_pkt[arg] = True
+
 	def create(self):
 		logging.info('Creating network...')
 		self.ip_next = self.ip
@@ -58,7 +61,7 @@ class Node:
 		# Send join message and wait for answer
 		self.sender(contact_address, packed_data)
 		self.expected_pkt[4] == True
-		while not self.expected_pkt[4]:
+		while self.expected_pkt[4]:
 			pass
 
 		return self.recv_data
@@ -67,6 +70,7 @@ class Node:
 		logging.info('Join Received')
 		s = struct.Struct('! B I')
 		unpacked_data = s.unpack(pkt)
+		logging.info('unpack data: %s', unpacked_data)
 		error_code = 1
 
 		condition = unpacked_data[1] == self.key or unpacked_data[1] == self.key_next or unpacked_data[1] == self.key_prev
@@ -85,14 +89,14 @@ class Node:
 			self.ip_prev = address[0]
 			self.key_prev = unpacked_data[1]
 
-		self.sender(address, packed_data)
+		self.sender((address[0], self.port), packed_data)
 
 	def process_join_answer(self, pkt, address):
 		# unpacking data
 		s = struct.Struct('! B B I B B B B I B B B B')
 		unpacked_data = s.unpack(pkt)
 
-		logging.debug('Unpacked Values: %s', (unpacked_data))
+		logging.info('unpack data: %s', unpacked_data)
 
 		if (unpacked_data[1] == 1):
 			logging.info('Information about next node obtained. Should update previous node...')
@@ -137,7 +141,7 @@ class Node:
 			self.sender(contact_address[i], packed_data)
 			self.expected_pkt[5] = True
 
-			while not self.expected_pkt[5]:
+			while self.expected_pkt[5]:
 				pass
 			logging.debug('Receive %s', self.recv_data)
 		return
@@ -151,7 +155,7 @@ class Node:
 	def update(self):
 		logging.info('Executing update...')
 
-		contact_address = (self.ip_prev, self.listen_port)
+		contact_address = (self.ip_prev, self.port)
 
 		# building package
 		ip_fmt = self.ip.split('.')
@@ -160,16 +164,16 @@ class Node:
 		    logging.error('Wrong IP pattern')
 		    return
 
-		data = (self.cod_request_update, self.key, self.key, int(ip_fmt[0]),
+		data = (self.cod_update_request, self.key, self.key, int(ip_fmt[0]),
 		        int(ip_fmt[1]), int(ip_fmt[2]), int(ip_fmt[3]))
 
 		s = struct.Struct('! B I I B B B B')
 		packed_data = s.pack(*data)
 
-		self.sender(contact_address, packed_data)
+		self.sender(packed_data, contact_address)
 		self.expected_pkt[7] = True
 
-		while not self.expected_pkt[7]:
+		while self.expected_pkt[7]:
 			pass
 
 		return self.recv_data
@@ -180,6 +184,7 @@ class Node:
 		#build package
 		s = struct.Struct('! B I I B B B B')
 		unpacked_data = s.unpack(pkt)
+		logging.info('unpack data: %s', unpacked_data)
 		received_key = unpacked_data[2]
 		received_ip = str(unpacked_data[3]) + '.' + str(unpacked_data[4]) + '.' + str(unpacked_data[5]) + '.' + str(
 		    unpacked_data[6])
@@ -213,6 +218,7 @@ class Node:
 		logging.info('Update response recieved...')
 		s = struct.Struct('! B B I')
 		unpacked_data = s.unpack(pkt)
+		logging.info('unpack data: %s', unpacked_data)
 		answer = None
 
 		if unpacked_data[1] == 0:
@@ -243,14 +249,15 @@ class Node:
 		self.sender(contact_address, packed_data)
 		self.expected_pkt[6] = True
 
-		while not self.expected_pkt[6]:
-			pass
+		while self.expected_pkt[6]:
+			continue
 
 		return self.recv_data
 
 	def process_lookup_request(self, packed_data, address):
 		s = struct.Struct('! B I B B B B I')
 		unpacked_data = s.unpack(packed_data)
+		logging.info('unpack data: %s', unpacked_data)
 		key_sought = unpacked_data[6]
 
 		data = None
@@ -275,6 +282,7 @@ class Node:
 		logging.info('Processing look up answer...')
 		s = struct.Struct('! B I I B B B B')
 		unpacked_data = s.unpack(pkt)
+		logging.info('unpack data: %s', unpacked_data)
 
 		key_sought = unpacked_data[1]
 		key_sucessor = unpacked_data[2]
@@ -306,7 +314,7 @@ class Node:
 			logging.info('Socket closed...')
 
 	def listener(self):
-		logging.info('Creating server...')
+		logging.info('Creating listener...')
 		server_address = (self.ip, self.port)
 
 		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
