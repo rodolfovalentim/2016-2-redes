@@ -21,6 +21,8 @@ class Node:
 
 	expected_pkt = [False, False, False, False, False, False, False, False]
 
+	live = False
+
 	def __init__(self, ip):
 		self.ip = ip
 		self.key = random.getrandbits(32)
@@ -33,7 +35,7 @@ class Node:
 	def get_new_key(self):
 		self.key = random.getrandbits(32)
 
-	def set_mask(self, arg):
+	def set_mask(self, arg, value):
 		self.expected_pkt[arg] = True
 
 	def create(self):
@@ -58,7 +60,7 @@ class Node:
 		# Send join message and wait for answer
 		logging.debug("Unpacked data to be send: %s", data)
 		self.sender(contact_address, packed_data)
-		self.expected_pkt[4] == True
+		self.expected_pkt[4] = True
 		while self.expected_pkt[4]:
 			pass
 
@@ -338,6 +340,9 @@ class Node:
 			sock.close()
 			logging.info('Socket closed...')
 
+	def kill_listener(self):
+		self.live = False
+
 	def listener(self):
 		logging.info('Creating listener...')
 		server_address = (self.ip, self.port)
@@ -349,16 +354,12 @@ class Node:
 
 		data = None
 		address = None
-		answered = False
-		for i in range(8):
-				answered = answered or self.expected_pkt[i]
-
-		for i in range(8):
-			answered = answered or self.expected_pkt[i]
 
 		logging.info('Waiting to receive message...')
 
-		while answered:
+		self.live = True
+
+		while self.live:
 			try:
 				data, address = sock.recvfrom(4096)
 				pattern = '!' + str(len(data)) + 'B'
@@ -391,10 +392,6 @@ class Node:
 					logging.error('Unknown code message')
 			except:
 				pass
-
-			answered = False
-			for i in range(8):
-				answered = answered or self.expected_pkt[i]
 
 		sock.close()
 		logging.info('Closing listener')
