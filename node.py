@@ -45,7 +45,7 @@ class Node:
 
 		if(self.key_next != None):
 			string = string + 'Sucessor info:\n'
-			string = string + 'IP: ' + self.ip_next + '\tKey: ' + str(self.key_prev)
+			string = string + 'IP: ' + self.ip_next + '\tKey: ' + str(self.key_next)
 		else:
 			string = string + 'Sucessor info:\n'
 			string = string + 'Not defined\n'
