@@ -222,7 +222,7 @@ class Node:
 			logging.debug('%s successfully updated' % unpacked_data[2])
 			answer = True
 		return answer
-		
+
 	def lookup(self, key_sought, contact_address):
 		logging.info('Looking up...')
 
