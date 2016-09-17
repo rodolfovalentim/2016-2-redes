@@ -157,7 +157,12 @@ class Node:
 		key_prev = unpacked_data[7]
 		ip_prev = str(unpacked_data[8]) + '.' + str(unpacked_data[9]) + '.' + str(unpacked_data[10]) + '.' + str(unpacked_data[11])
 
-		if(self.key == key_next):
+		if(self.key == key_next and self.key == key_prev):
+			self.key_prev = key_prev
+			self.ip_prev = ip_prev
+			self.key_next = key_next
+			self.ip_next = ip_next
+		elif(self.key == key_next):
 			self.key_prev = key_prev
 			self.ip_prev = ip_prev
 		elif (self.key == key_prev):
@@ -177,15 +182,16 @@ class Node:
 		self.sender((address[0], self.port), packed_data)
 
 	def process_leave_answer(self, pkt, address):
+		logging.info('Processing leave answer')
 		s = struct.Struct('! B I')
 		unpacked_data = s.unpack(pkt)
-		logging.info('Leave answer received from: %s. Content: %s', (address, unpacked_data[1]))
+		logging.info("Leave answer received from: %s. Content: %s" % (address, unpacked_data))
 		if(unpacked_data[1] == self.key_prev):
-			self.ip_prev = None
-			self.key_prev = None
+		 	self.ip_prev = None
+		 	self.key_prev = None
 		elif(unpacked_data[1] == self.key_next):
-			self.ip_next = None
-			self.key_next = None
+		 	self.ip_next = None
+		 	self.key_next = None
 
 	def update(self):
 		logging.info('Executing update...')
