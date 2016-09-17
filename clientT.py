@@ -3,7 +3,7 @@ from node import *
 def join():
     contact_ip = raw_input('IP of your contact in the network: ')
 
-    while(True)
+    while(True):
         (, , ip_sucessor) = node.lookup(node.key, (contact_ip, default_port))
         if(not node.join(ip_sucessor))
             node.get_new_key()

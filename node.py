@@ -33,7 +33,7 @@ class Node:
 	def __str__(self):
 		return str(self.ip) + ', ' + str(self.key) + ', ' + str(self.port) + ', ' + str(self.ip_next) + ', ' + str(self.key_next)
 
-	def get_new_key()
+	def get_new_key(self):
 		self.key = random.getrandbits(32)
 
 	def create(self):
