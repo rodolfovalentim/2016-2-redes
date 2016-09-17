@@ -177,7 +177,7 @@ class Node:
 		while not self.expected_pkt[7]:
 			pass
 
-	    return self.recv_data
+		return self.recv_data
 
 	def process_update_request(self, pkt, address):
 		logging.info('Update received...')
@@ -211,9 +211,8 @@ class Node:
 		packed_data = s.pack(*data)
 
 		# Send package
-	    self.sender(contact_address, packed_data)
-
-	    return None
+		self.sender(contact_address, packed_data)
+		return None
 
 	def process_update_answer(self, pkt, address):
 	    logging.info('Update response recieved...')
