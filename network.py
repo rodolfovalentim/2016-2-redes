@@ -43,10 +43,14 @@ def lookup():
 def update():
     node.update()
 
-def exit()
+def exit():
     node.kill_listener()
 
-def keyboard():
+def start_listener():
+    t = threading.Thread(name='Listener', target=node.listener)
+    t.start()
+
+def start_keyboard():
     while True:
         nb = raw_input('< CREATE / JOIN / LEAVE / LOOKUP / UPDATE / EXIT > Choose:')
         if (nb == 'CREATE'):
@@ -68,3 +72,5 @@ def keyboard():
 
 ip = raw_input('Your IP: ')
 node = Node(ip)
+start_listener()
+start_keyboard()
