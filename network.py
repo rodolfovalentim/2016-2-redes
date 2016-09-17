@@ -1,7 +1,6 @@
 from node import *
 
-node = Node('127.0.0.1')
-(key_sought, key_sucessor, ip_sucessor) = node.lookup(1, ('127.0.0.1', 12244))
-#error = node.join() # manda join pro sucessor
-#if (!error):
-#    node.update() # faz update do antecessor
+node = Node('192.168.1.100')
+node.join('192.168.1.142')
+#node.lookup(1, ('192.168.1.142', 12233))
+#node.update()

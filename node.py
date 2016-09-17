@@ -60,8 +60,8 @@ class Node:
 
 		# Send join message and wait for answer
 		self.sender(contact_address, packed_data)
-		self.expected_pkts[4] == True
-		while not self.expected_pkts[4]:
+		self.expected_pkt[4] == True
+		while not self.expected_pkt[4]:
 			pass
 
 		return self.recv_data
@@ -78,10 +78,7 @@ class Node:
 
 		ip_prev_fmt = self.ip_prev.split('.')
 		ip_next_fmt = self.ip.split('.')
-		data = (self.cod_join_answer, error_code,
-		self.key, int(ip_next_fmt[0]), int(ip_next_fmt[1]), int(ip_fmt[2]), int(ip_fmt[3]),
-		self.key_prev, int(ip_prev_fmt[0]), int(ip_prev_fmt[1]), int(ip_prev_fmt[2]), int(ip_prev_fmt[3]))
-
+		data = (self.cod_join_answer, error_code, self.key, int(ip_next_fmt[0]), int(ip_next_fmt[1]), int(ip_fmt[2]), int(ip_fmt[3]), self.key_prev, int(ip_prev_fmt[0]), int(ip_prev_fmt[1]), int(ip_prev_fmt[2]), int(ip_prev_fmt[3]))
 		s = struct.Struct('! B B I B B B B I B B B B')
 		packed_data = s.pack(data)
 
@@ -137,11 +134,11 @@ class Node:
 		s = struct.Struct('! B I I B B B B I B B B B')
 		packed_data = s.pack(*values)
 
-		for i in range(2)
+		for i in range(2):
 			self.sender(contact_address[i], packed_data)
-			self.expected_pkts[5] = True
+			self.expected_pkt[5] = True
 
-			while not self.expected_pkts[5]:
+			while not self.expected_pkt[5]:
 				pass
 
 			logging.debug('Receive %s', self.recv_data)
@@ -155,61 +152,61 @@ class Node:
 		pass
 
 	def update(self):
-	    logging.info('Executing update...')
+		logging.info('Executing update...')
 
-	    contact_address = (self.ip_prev, self.listen_port)
+		contact_address = (self.ip_prev, self.listen_port)
 
-	    # building package
-	    ip_fmt = self.ip.split('.')
+		# building package
+		ip_fmt = self.ip.split('.')
 
-	    if (len(ip_fmt) != 4):
-	        logging.error('Wrong IP pattern')
-	        return
+		if (len(ip_fmt) != 4):
+		    logging.error('Wrong IP pattern')
+		    return
 
-	    data = (self.cod_request_update, self.key, self.key, int(ip_fmt[0]),
-	            int(ip_fmt[1]), int(ip_fmt[2]), int(ip_fmt[3]))
+		data = (self.cod_request_update, self.key, self.key, int(ip_fmt[0]),
+		        int(ip_fmt[1]), int(ip_fmt[2]), int(ip_fmt[3]))
 
-	    s = struct.Struct('! B I I B B B B')
-	    packed_data = s.pack(*data)
+		s = struct.Struct('! B I I B B B B')
+		packed_data = s.pack(*data)
 
 		self.sender(contact_address, packed_data)
-		self.expected_pkts[7] = True
+		self.expected_pkt[7] = True
 
-		while not self.expected_pkts[7]:
+		while not self.expected_pkt[7]:
 			pass
 
 		return self.recv_data
 
 	def process_update_request(self, pkt, address):
-	    logging.info('Update received...')
+		logging.info('Update received...')
 
 		#build package
-	    s = struct.Struct('! B I I B B B B')
-	    unpacked_data = s.unpack(pkt)
-	    received_key = unpacked_data[2]
-	    received_ip = str(unpacked_data[3]) + '.' + str(unpacked_data[4]) + '.' + str(unpacked_data[5]) + '.' + str(
-	        unpacked_data[6])
+		s = struct.Struct('! B I I B B B B')
+		unpacked_data = s.unpack(pkt)
+		received_key = unpacked_data[2]
+		received_ip = str(unpacked_data[3]) + '.' + str(unpacked_data[4]) + '.' + str(unpacked_data[5]) + '.' + str(
+		    unpacked_data[6])
 
-	    contact_address = (received_ip, self.port)
+		contact_address = (received_ip, self.port)
 
-	    # building package
-	    ip_fmt = self.ip.split('.')
+		# building package
+		ip_fmt = self.ip.split('.')
 
-	    if (len(ip_fmt) != 4):
-	        logging.error('Wrong IP pattern')
-	        return
-	    error_code = None
+		if (len(ip_fmt) != 4):
+		    logging.error('Wrong IP pattern')
+		    return
+		error_code = None
 		# Error verification
-	    if received_key == self.key or received_key == self.key_next or received_key == self.key_prev:
-	        error_code = 0
-	    else:
-	        self.ip_next = received_ip
-	        self.key_next = received_key
-	        error_code = 1
-	    data = (self.cod_answer_update, error_code, self.key)
+		if received_key == self.key or received_key == self.key_next or received_key == self.key_prev:
+		    error_code = 0
+		else:
+		    self.ip_next = received_ip
+		    self.key_next = received_key
+		    error_code = 1
+		data = (self.cod_answer_update, error_code, self.key)
 
-	    s = struct.Struct('! B B I')
-	    packed_data = s.pack(*data)
+		s = struct.Struct('! B B I')
+		packed_data = s.pack(*data)
 
 		# Send package
 		self.sender(contact_address, packed_data)
@@ -246,9 +243,9 @@ class Node:
 
 		# Send lookup message and wait for answer
 		self.sender(contact_address, packed_data)
-		self.expected_pkts[6] = True
+		self.expected_pkt[6] = True
 
-		while not self.expected_pkts[6]
+		while not self.expected_pkt[6]:
 			pass
 
 		return self.recv_data
@@ -319,37 +316,39 @@ class Node:
 		address = None
 		answered = True
 
+		for i in range(8):
+			answered = answered or self.expected_pkt[i]
+
 		logging.info('Waiting to receive message...')
 
-		while not answered:
+		while answered:
 			try:
 				data, address = sock.recvfrom(4096)
 				logging.debug('Received %s bytes from %s' % (len(data), address))
 				pattern = '!' + str(len(data)) + 'B'
 				s = struct.Struct(pattern)
 				cod_message = s.unpack(data)[0]
-				logging.info(pkt_type[6])
 
-				if (self.expected_pkts[0] and cod_message == self.cod_join_request):
+				if (self.expected_pkt[0] and cod_message == self.cod_join_request):
 					self.process_join_request(data, address)
-				elif (self.expected_pkts[1] and cod_message == self.cod_leave_request):
+				elif (self.expected_pkt[1] and cod_message == self.cod_leave_request):
 					self.process_leave_request(data, address)
-				elif (self.expected_pkts[2] and cod_message == self.cod_lookup_request):
+				elif (self.expected_pkt[2] and cod_message == self.cod_lookup_request):
 					self.process_lookup_request(data, address)
-				elif (self.expected_pkts[3] and cod_message == self.cod_update_request):
+				elif (self.expected_pkt[3] and cod_message == self.cod_update_request):
 					self.process_update_request(data, address)
-				elif (self.expected_pkts[4] and cod_message == self.cod_join_answer):
+				elif (self.expected_pkt[4] and cod_message == self.cod_join_answer):
 					self.recv_data = self.process_join_answer(data, address)
-					self.expected_pkts[4] = False
-				elif (self.expected_pkts[5] and cod_message == self.cod_leave_answer):
+					self.expected_pkt[4] = False
+				elif (self.expected_pkt[5] and cod_message == self.cod_leave_answer):
 					self.recv_data = self.process_leave_answer(data, address)
-					self.expected_pkts[5] = False
-				elif (self.expected_pkts[6] and cod_message == self.cod_lookup_answer):
+					self.expected_pkt[5] = False
+				elif (self.expected_pkt[6] and cod_message == self.cod_lookup_answer):
 					self.recv_data = self.process_lookup_answer(data, address)
-					self.expected_pkts[6] = False
-				elif (self.expected_pkts[7] and cod_message == self.cod_update_answer):
+					self.expected_pkt[6] = False
+				elif (self.expected_pkt[7] and cod_message == self.cod_update_answer):
 					self.recv_data = self.process_update_answer(data, address)
-					self.expected_pkts[7] = False
+					self.expected_pkt[7] = False
 				else:
 					logging.error('Unknown code message')
 			except:
@@ -357,7 +356,7 @@ class Node:
 
 			answered = False
 			for i in range(8):
-				answered = answered or self.expected_pkts[i]
+				answered = answered or self.expected_pkt[i]
 
 		sock.close()
 		logging.info('Closing listener')
