@@ -180,6 +180,12 @@ class Node:
 		s = struct.Struct('! B I')
 		unpacked_data = s.unpack(pkt)
 		logging.info('Leave answer received from: %s. Content: %s', (address, unpacked_data[1]))
+		if(unpacked_data[1] == self.key_prev):
+			self.ip_prev = None
+			self.key_prev = None
+		elif(unpacked_data[1] == self.key_next):
+			self.ip_next = None
+			self.key_next = None
 
 	def update(self):
 		logging.info('Executing update...')

@@ -17,9 +17,30 @@ def join():
             continue
         break
 
+def keyboard():
+    while True:
+        nb = raw_input('< CREATE / JOIN / LEAVE / LOOKUP / UPDATE / EXIT > Choose:')
+        if (nb == 'CREATE'):
+            pass
+        elif (nb == 'JOIN'):
+            pass
+        elif (nb == 'LEAVE'):
+            node.leave()
+            break
+        elif (nb == 'LOOKUP'):
+            pass
+        elif (nb == 'UPDATE'):
+            pass
+        elif (nb == 'EXIT'):
+            break
+        else:
+            logging.error('Option not find')
+    logging.error('Exiting')
+
 ip = raw_input('Your IP: ')
 node = Node(ip)
 t = threading.Thread(name='Listener', target=node.listener)
 t.start()
 join()
+keyboard()
 node.kill_listener()
