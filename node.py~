@@ -33,11 +33,8 @@ class Node:
 	def __str__(self):
 		return str(self.ip) + ', ' + str(self.key) + ', ' + str(self.port) + ', ' + str(self.ip_next) + ', ' + str(self.key_next)
 
-	def setShouldIBeAlive(self, value):
-		self.shouldIBeAlive = value
-
-	def getShouldIBeAlive(self):
-		return self.shouldIBeAlive
+	def get_new_key(self):
+		self.key = random.getrandbits(32)
 
 	def create(self):
 		logging.info('Creating network...')
@@ -142,9 +139,7 @@ class Node:
 
 			while not self.expected_pkt[5]:
 				pass
-
 			logging.debug('Receive %s', self.recv_data)
-
 		return
 
 	def process_leave_request(self, pkt, address):
@@ -218,14 +213,16 @@ class Node:
 	    logging.info('Update response recieved...')
 	    s = struct.Struct('! B B I')
 	    unpacked_data = s.unpack(pkt)
-
+        answer = None
+		
 	    if unpacked_data[1] == 0:
 	        logging.error('Update error from %s' % unpacked_data[2])
+			answer = False
 	    else:
-	        logging.debug('%s successfully apdated' % unpacked_data[2])
-
-	    return unpacked_data[1], unpacked_data[2]
-
+	        logging.debug('%s successfully updated' % unpacked_data[2])
+			answer = True
+		return answer
+		
 	def lookup(self, key_sought, contact_address):
 		logging.info('Looking up...')
 
@@ -290,6 +287,9 @@ class Node:
 	def sender(self, contact_address, packed_data):
 		server_address = (self.ip, self.port)
 
+		# The UDP echo client is similar the server, but does not use bind()
+		# to attach its socket to an address. It uses sendto() to deliver its
+		# message directly to the server, and recvfrom() to receive the response.
 		logging.info('Creating socket...')
 		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
