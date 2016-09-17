@@ -37,7 +37,7 @@ def leave():
     node.leave()
 def lookup():
     key_input = raw_input('Type the key to look up: ')
-    ip_sucessor = node.lookup(key_input, (node.ip_next, node.port))
+    ip_sucessor = node.lookup(int(key_input), (node.ip_next, node.port))
     logging.info('Answer lookup %s' % ip_sucessor)
 
 def update():
@@ -50,9 +50,12 @@ def start_listener():
     t = threading.Thread(name='Listener', target=node.listener)
     t.start()
 
+def info():
+    logging.info(node)
+
 def start_keyboard():
     while True:
-        nb = raw_input('< CREATE / JOIN / LEAVE / LOOKUP / UPDATE / EXIT > Choose:')
+        nb = raw_input('< CREATE / JOIN / LEAVE / LOOKUP / UPDATE / INFO / EXIT > Choose:')
         if (nb == 'CREATE'):
             create()
         elif (nb == 'JOIN'):
@@ -63,6 +66,8 @@ def start_keyboard():
             lookup()
         elif (nb == 'UPDATE'):
             update()
+        elif (nb == 'INFO'):
+            info()
         elif (nb == 'EXIT'):
             exit()
             break

@@ -32,6 +32,26 @@ class Node:
 		self.ip_prev = None
 		self.key_prev = None
 
+	def __str__(self):
+		string = '\nMy info:\n'
+		string = string + 'IP: ' + self.ip + '\tKey: ' + str(self.key) + '\n'
+
+		if(self.key_prev != None):
+			string = string + 'Antecessor info:\n'
+			string = string + 'IP: ' + self.ip_prev + '\tKey: ' + str(self.key_prev) + '\n'
+		else:
+			string = string + 'Antecessor info:\n'
+			string = string + 'Not defined\n'
+
+		if(self.key_next != None):
+			string = string + 'Sucessor info:\n'
+			string = string + 'IP: ' + self.ip_next + '\tKey: ' + str(self.key_prev)
+		else:
+			string = string + 'Sucessor info:\n'
+			string = string + 'Not defined\n'
+
+		return string
+
 	def get_new_key(self):
 		self.key = random.getrandbits(32)
 
