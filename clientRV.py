@@ -7,9 +7,9 @@ def join():
     contact_ip = raw_input('IP of your contact in the network: ')
 
     while(True):
+        logging.info('PASSSOYYYYYYYYYYYYYYYY')
         ip_sucessor = node.lookup(node.key, (contact_ip, default_port))
         logging.info(ip_sucessor)
-
         if(not node.join(ip_sucessor[2])):
             node.get_new_key()
             continue
@@ -25,10 +25,9 @@ node.set_mask(6)
 node.set_mask(4)
 t = threading.Thread(name='Listener', target=node.listener)
 t.start()
-
 join()
+
 node.set_mask(0)
 node.set_mask(2)
 node.set_mask(3)
-t = threading.Thread(name='Listener', target=node.listener)
 t.start()

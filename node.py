@@ -195,14 +195,10 @@ class Node:
 		if (len(ip_fmt) != 4):
 		    logging.error('Wrong IP pattern')
 		    return
-		error_code = None
-		# Error verification
-		if received_key == self.key or received_key == self.key_next or received_key == self.key_prev:
-		    error_code = 0
-		else:
-		    self.ip_next = received_ip
-		    self.key_next = received_key
-		    error_code = 1
+
+		error_code = 1
+		self.ip_next = received_ip
+		self.key_next = received_key
 		data = (self.cod_update_answer, error_code, self.key)
 
 		s = struct.Struct('! B B I')
