@@ -4,6 +4,7 @@ import threading
 import time
 import socket
 import struct
+from prettytable import PrettyTable
 
 class Node:
 	'A node in the network'
@@ -33,24 +34,19 @@ class Node:
 		self.key_prev = None
 
 	def __str__(self):
-		string = '\nMy info:\n'
-		string = string + 'IP: ' + self.ip + '\tKey: ' + str(self.key) + '\n'
+		t = PrettyTable(['','IP', 'KEY'])
+		t.add_row(['SELF', self.ip, str(self.key)])
 
 		if(self.key_prev != None):
-			string = string + 'Antecessor info:\n'
-			string = string + 'IP: ' + self.ip_prev + '\tKey: ' + str(self.key_prev) + '\n'
+			t.add_row(['PREV', self.ip_prev, str(self.key_prev)])
 		else:
-			string = string + 'Antecessor info:\n'
-			string = string + 'Not defined\n'
+			t.add_row(['PREV', 'NONE', 'NONE'])
 
 		if(self.key_next != None):
-			string = string + 'Sucessor info:\n'
-			string = string + 'IP: ' + self.ip_next + '\tKey: ' + str(self.key_next)
+			t.add_row(['NEXT', self.ip_next, str(self.key_next)])
 		else:
-			string = string + 'Sucessor info:\n'
-			string = string + 'Not defined\n'
-
-		return string
+			t.add_row(['NEXT', 'NONE', 'NONE'])
+		return str(t)
 
 	def get_new_key(self):
 		self.key = random.getrandbits(32)

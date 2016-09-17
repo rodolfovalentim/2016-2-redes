@@ -51,7 +51,7 @@ def start_listener():
     t.start()
 
 def info():
-    logging.info(node)
+    print (node)
 
 def start_keyboard():
     while True:
