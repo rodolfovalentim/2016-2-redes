@@ -292,7 +292,6 @@ class Node:
 
 		logging.info('Creating socket...')
 		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-		sock.bind(server_address)
 
 		try:
 			# Send data
