@@ -93,7 +93,6 @@ class Node:
 		# unpacking data
 		s = struct.Struct('! B B I B B B B I B B B B')
 		unpacked_data = s.unpack(pkt)
-
 		logging.info('Unpack data: %s', unpacked_data)
 
 		if (unpacked_data[1] == 1):
@@ -143,13 +142,42 @@ class Node:
 			while self.expected_pkt[5]:
 				pass
 			logging.debug('Receive %s', self.recv_data)
+
 		return
 
 	def process_leave_request(self, pkt, address):
-		pass
+		s = struct.Struct('! B I I B B B B I B B B B')
+		unpacked_data = s.unpack(pkt)
+		logging.info('Unpack data: %s', unpacked_data)
+
+		key_next = unpacked_data[2]
+		ip_next = str(unpacked_data[3]) + '.' + str(unpacked_data[4]) + '.' + str(unpacked_data[5]) + '.' + str(unpacked_data[6])
+		key_prev = unpacked_data[7]
+		ip_prev = str(unpacked_data[8]) + '.' + str(unpacked_data[9]) + '.' + str(unpacked_data[10]) + '.' + str(unpacked_data[11])
+
+		if(self.key == key_next):
+			self.key_prev = key_prev
+			self.ip_prev = ip_prev
+		elif (self.key == key_prev):
+			self.key_next = key_next
+			self.ip_next = ip_next
+		else:
+			logging.error("Error while processing leave request.")
+
+		# building package
+		data = (self.cod_leave_answer, self.key)
+
+		s = struct.Struct('! B I')
+		packed_data = s.pack(*data)
+
+		# Send join message and wait for answer
+		logging.debug("Unpacked data to be send: %s", data)
+		self.sender((address[0], self.port), packed_data)
 
 	def process_leave_answer(self, pkt, address):
-		pass
+		s = struct.Struct('! B I')
+		unpacked_data = s.unpack(pkt)
+		logging.info('Leave answer received from: %s. Content: %s', (address, unpacked_data[1]))
 
 	def update(self):
 		logging.info('Executing update...')
