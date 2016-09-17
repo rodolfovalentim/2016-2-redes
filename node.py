@@ -33,11 +33,8 @@ class Node:
 	def __str__(self):
 		return str(self.ip) + ', ' + str(self.key) + ', ' + str(self.port) + ', ' + str(self.ip_next) + ', ' + str(self.key_next)
 
-	def setShouldIBeAlive(self, value):
-		self.shouldIBeAlive = value
-
-	def getShouldIBeAlive(self):
-		return self.shouldIBeAlive
+	def get_new_key()
+		self.key = random.getrandbits(32)
 
 	def create(self):
 		logging.info('Creating network...')
@@ -142,9 +139,7 @@ class Node:
 
 			while not self.expected_pkt[5]:
 				pass
-
 			logging.debug('Receive %s', self.recv_data)
-
 		return
 
 	def process_leave_request(self, pkt, address):
@@ -221,10 +216,10 @@ class Node:
 
 	    if unpacked_data[1] == 0:
 	        logging.error('Update error from %s' % unpacked_data[2])
+			return False
 	    else:
-	        logging.debug('%s successfully apdated' % unpacked_data[2])
-
-	    return unpacked_data[1], unpacked_data[2]
+	        logging.debug('%s successfully updated' % unpacked_data[2])
+			return True
 
 	def lookup(self, key_sought, contact_address):
 		logging.info('Looking up...')
