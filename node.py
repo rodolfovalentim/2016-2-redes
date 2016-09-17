@@ -255,7 +255,7 @@ class Node:
 
 		data = None
 		dest_ip = None
-		if ((key_sought >= self.key and (key_sought < self.key_next or self.key_next < self.key)) or (self.key_next < self.key and key_sought<self.key_next)):
+		if ((key_sought >= self.key and (key_sought < self.key_next or self.key_next <= self.key)) or (self.key_next <= self.key and key_sought<self.key_next)):
 			ip_fmt = self.ip_next.split('.')
 			data = (self.cod_lookup_answer, key_sought, self.key_next, int(ip_fmt[0]), int(ip_fmt[1]), int(ip_fmt[2]), int(ip_fmt[3]))
 			s = struct.Struct('! B I I B B B B')
@@ -282,7 +282,9 @@ class Node:
 
 		logging.debug('Receive from LookUp: Key = "%s" IP = "%s"' % (key_sucessor, ip_sucessor))
 
-		return (key_sought, key_sucessor, ip_sucessor)
+		data = (key_sought, key_sucessor, ip_sucessor)
+
+		return data
 
 	def sender(self, contact_address, packed_data):
 		server_address = (self.ip, self.port)
