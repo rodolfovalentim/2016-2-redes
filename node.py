@@ -4,7 +4,10 @@ import threading
 import time
 import socket
 import struct
+import time
 from prettytable import PrettyTable
+
+current_milli_time = lambda: int(round(time.time() * 1000))
 
 class Node:
 	'A node in the network'
@@ -77,9 +80,12 @@ class Node:
 		logging.debug("Unpacked data to be send: %s", data)
 		self.sender(contact_address, packed_data)
 		self.expected_pkt[4] = True
-		while self.expected_pkt[4]:
-			pass
 
+		start = current_milli_time()
+		while self.expected_pkt[4]:
+			if(current_milli_time() - start >= 500):
+				logging.warning("Time-out in the join request")
+				break
 		return self.recv_data
 
 	def process_join_request(self, pkt, address):
@@ -157,10 +163,12 @@ class Node:
 			self.sender(contact_address[i], packed_data)
 			self.expected_pkt[5] = True
 
+			start = current_milli_time()
 			while self.expected_pkt[5]:
-				pass
+				if(current_milli_time() - start >= 500):
+					logging.warning("Time-out in the join request")
+					break
 			logging.debug('Receive %s', self.recv_data)
-
 		return
 
 	def process_leave_request(self, pkt, address):
@@ -230,9 +238,11 @@ class Node:
 		self.sender(contact_address, packed_data)
 		self.expected_pkt[7] = True
 
+		start = current_milli_time()
 		while self.expected_pkt[7]:
-			pass
-
+			if(current_milli_time() - start >= 500):
+				logging.warning("Time-out in the join request")
+				break
 		return self.recv_data
 
 	def process_update_request(self, pkt, address):
@@ -303,9 +313,11 @@ class Node:
 		self.sender(contact_address, packed_data)
 		self.expected_pkt[6] = True
 
+		start = current_milli_time()
 		while self.expected_pkt[6]:
-			continue
-
+			if(current_milli_time() - start >= 500):
+				logging.warning("Time-out in the join request")
+				break
 		return self.recv_data
 
 	def process_lookup_request(self, packed_data, address):
