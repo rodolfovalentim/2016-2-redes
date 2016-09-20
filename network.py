@@ -1,5 +1,3 @@
-#!/usr/bin/python2.7
-
 from node import *
 import logging
 
@@ -16,20 +14,28 @@ def create():
 def join():
     contact_ip = raw_input('IP of your contact in the network: ')
 
-    while(True):
+    attempt = 1
+    while(attempt < 4):
+        logging.info("Attempt %s/3 to join network", attempt)
         ip_sucessor = node.lookup(node.key, (contact_ip, node.port))
-        logging.info(ip_sucessor)
-        if(not node.join(ip_sucessor[2])):
+        if(node.timeout[2]):
+            attempt = attempt + 1
+            continue
+        if(not node.timeout[0] and not node.join(ip_sucessor[2])):
+            node.get_new_key()
+            attempt = attempt + 1
+            continue
+        if(not node.timeout[3] and not node.update()):
+            attempt = attempt + 1
             node.get_new_key()
             continue
-        if(not node.update()):
-            node.get_new_key()
-            continue
+        logging.info("Successfully joined to network")
+        state = 1
+        node.set_mask(0, True)
+        node.set_mask(1, True)
+        node.set_mask(2, True)
+        node.set_mask(3, True)
         break
-    node.set_mask(0, True)
-    node.set_mask(1, True)
-    node.set_mask(2, True)
-    node.set_mask(3, True)
 
 def leave():
     node.set_mask(0, False)
@@ -37,6 +43,7 @@ def leave():
     node.set_mask(2, False)
     node.set_mask(3, False)
     node.leave()
+    state = 0
 
 def lookup():
     key_input = raw_input('Type the key to look up: ')
@@ -75,32 +82,30 @@ def start_keyboard():
     state = 0
     while True:
         if (state == 0):
-            nb = raw_input('< CREATE / JOIN / INFO / EXIT > Choose:')
-            if (nb == 'CREATE'):
+            nb = raw_input('< CREATE / JOIN / INFO / EXIT > Choose:\n')
+            if (nb == 'CREATE' or nb == 'create' ):
                 create()
                 state = 1
-            elif (nb == 'JOIN'):
+            elif (nb == 'JOIN' or nb == 'join' ):
                 join()
-                state = 1
-            elif (nb == 'INFO'):
+            elif (nb == 'INFO' or nb == 'info' ):
                 info()
-            elif (nb == 'EXIT'):
+            elif (nb == 'EXIT' or nb == 'exit' ):
                 exit()
                 break
             else:
                 logging.warning('Option not find')
         else:
             nb = raw_input('< LEAVE / LOOKUP / UPDATE / INFO / LIST > Choose:')
-            if (nb == 'LEAVE'):
+            if (nb == 'LEAVE' or nb == 'leave' ):
                 leave()
-                state = 0
-            elif (nb == 'LOOKUP'):
+            elif (nb == 'LOOKUP' or nb == 'lookup' ):
                 lookup()
-            elif (nb == 'UPDATE'):
+            elif (nb == 'UPDATE' or nb == 'update' ):
                 update()
-            elif (nb == 'INFO'):
+            elif (nb == 'INFO' or nb == 'info' ):
                 info()
-            elif (nb == 'LIST'):
+            elif (nb == 'LIST' or nb == 'list' ):
                 list_nodes()
             else:
                 logging.warning('Option not find')

@@ -22,6 +22,7 @@ class Node:
 	cod_update_answer = 131
 
 	recv_data = None
+	timeout = [False, False, False, False] #join, leave, lookup, update
 
 	expected_pkt = [False, False, False, False, False, False, False, False]
 
@@ -81,10 +82,12 @@ class Node:
 		self.sender(contact_address, packed_data)
 		self.expected_pkt[4] = True
 
+		self.timeout[0] = False
 		start = current_milli_time()
 		while self.expected_pkt[4]:
 			if(current_milli_time() - start >= 500):
-				logging.warning("Time-out in the join request")
+				self.timeout[0] = True
+				logging.error("Time-out in the join request")
 				break
 		return self.recv_data
 
@@ -163,10 +166,12 @@ class Node:
 			self.sender(contact_address[i], packed_data)
 			self.expected_pkt[5] = True
 
+			self.timeout[1] = False
 			start = current_milli_time()
 			while self.expected_pkt[5]:
 				if(current_milli_time() - start >= 500):
-					logging.warning("Time-out in the join request")
+					self.timeout[1] = True
+					logging.error("Time-out in the leave request %s", i)
 					break
 			logging.debug('Receive %s', self.recv_data)
 		return
@@ -238,10 +243,12 @@ class Node:
 		self.sender(contact_address, packed_data)
 		self.expected_pkt[7] = True
 
+		self.timeout[3] = False
 		start = current_milli_time()
 		while self.expected_pkt[7]:
 			if(current_milli_time() - start >= 500):
-				logging.warning("Time-out in the join request")
+				self.timeout[3] = True
+				logging.error("Time-out in the update request")
 				break
 		return self.recv_data
 
@@ -313,10 +320,12 @@ class Node:
 		self.sender(contact_address, packed_data)
 		self.expected_pkt[6] = True
 
+		self.timeout[2] = False
 		start = current_milli_time()
 		while self.expected_pkt[6]:
 			if(current_milli_time() - start >= 500):
-				logging.warning("Time-out in the join request")
+				self.timeout[2] = True
+				logging.error("Time-out in the look up request")
 				break
 		return self.recv_data
 
@@ -372,7 +381,7 @@ class Node:
 
 		try:
 			# Send data
-			logging.debug('Sending "%s" to %s' % (packed_data, contact_address))
+			logging.debug('Sending %s bytes to %s' % (len(packed_data), contact_address))
 			sent = sock.sendto(packed_data, contact_address)
 		finally:
 			# Closing socket
