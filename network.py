@@ -21,20 +21,25 @@ def join():
         if(node.timeout[2]):
             attempt = attempt + 1
             continue
-        if(not node.timeout[0] and not node.join(ip_sucessor[2])):
+        if(not node.join(ip_sucessor[2])):
             node.get_new_key()
             attempt = attempt + 1
             continue
-        if(not node.timeout[3] and not node.update()):
+        if (node.timeout[0]):
+            break
+        if(not node.update()):
             attempt = attempt + 1
             node.get_new_key()
             continue
+        if (node.timeout[3]):
+            break
         logging.info("Successfully joined to network")
-        state = 1
         node.set_mask(0, True)
         node.set_mask(1, True)
         node.set_mask(2, True)
         node.set_mask(3, True)
+        global state
+        state = 1
         break
 
 def leave():
@@ -43,6 +48,7 @@ def leave():
     node.set_mask(2, False)
     node.set_mask(3, False)
     node.leave()
+    global state
     state = 0
 
 def lookup():
@@ -79,7 +85,7 @@ def list_nodes():
     print t
 
 def start_keyboard():
-    state = 0
+    global state
     while True:
         if (state == 0):
             nb = raw_input('< CREATE / JOIN / INFO / EXIT > Choose:\n')
@@ -111,6 +117,7 @@ def start_keyboard():
                 logging.warning('Option not find')
     logging.info('Exiting')
 
+state = 0
 ip = raw_input('Your IP: ')
 node = Node(ip)
 start_listener()
