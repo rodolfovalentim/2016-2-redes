@@ -27,6 +27,8 @@ def join():
             continue
         if (node.timeout[0]):
             break
+        global state
+        state = 1
         if(not node.update()):
             attempt = attempt + 1
             node.get_new_key()
@@ -38,8 +40,6 @@ def join():
         node.set_mask(1, True)
         node.set_mask(2, True)
         node.set_mask(3, True)
-        global state
-        state = 1
         break
 
 def leave():
@@ -54,7 +54,8 @@ def leave():
 def lookup():
     key_input = raw_input('Type the key to look up: ')
     ip_sucessor = node.lookup(int(key_input), (node.ip_next, node.port))
-    logging.info('Answer lookup %s' % ip_sucessor[2])
+    if(not node.timeout[2]):
+        logging.info('Answer lookup %s' % ip_sucessor[2])
 
 def update():
     node.update()

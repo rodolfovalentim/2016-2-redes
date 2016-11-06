@@ -30,7 +30,7 @@ class Node:
 
 	def __init__(self, ip):
 		self.ip = ip
-		self.key = random.getrandbits(32)
+		self.key = random.getrandbits(8)
 		self.port = 12233
 		self.ip_next = None
 		self.key_next = None
@@ -53,7 +53,7 @@ class Node:
 		return str(t)
 
 	def get_new_key(self):
-		self.key = random.getrandbits(32)
+		self.key = random.getrandbits(8)
 
 	def set_mask(self, arg, value):
 		self.expected_pkt[arg] = True
